@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+
+	// "io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -14,9 +15,10 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
-	resource "github.com/lorands/http-resource"
-	"github.com/lorands/http-resource/out"
+	resource "github.com/lorands/http-put-resource"
+	"github.com/lorands/http-put-resource/out"
 )
 
 func main() {
@@ -25,14 +27,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	sourceDir := os.Args[1]
+
+	// fmt.Println("Input directory set.", sourceDir)
+
 	var request out.Request
 	inputRequest(&request)
 
-	sourceDir := os.Args[1]
+	// fmt.Println("Request params set:", request)
 
 	toPathPrefix := processTemplatedTo(request.Params.To)
 
-	fmt.Println("Target output URL: ", request.Source.URL + "/" + toPathPrefix)
+	// fmt.Println("Target output URL: ", request.Source.URL+"/"+toPathPrefix)
 
 	httpPut := prepareHTTPPut(request.Source)
 
@@ -41,7 +47,7 @@ func main() {
 	if request.Params.FromRe != "" {
 		re = regexp.MustCompile(request.Params.FromRe)
 		// fmt.Println(re)
-	}	
+	}
 
 	workFolder := sourceDir + "/" + request.Params.From
 	// readDirRecursively(sourceDir + "/" + request.Params.From)
@@ -53,14 +59,29 @@ func main() {
 		relPath := path[len(workFolder):]
 		if re != nil {
 			if re.MatchString(relPath) {
-				fmt.Println(relPath)
+				// fmt.Println(relPath)
 				if !info.IsDir() {
-					httpPut(path, toPathPrefix+path[len(workFolder):])
+					httpPut(path, toPathPrefix+"/"+path[len(workFolder):])
 				}
 			}
 		}
 		return nil
 	})
+
+	//TODO put url to metadata
+	var metadata []resource.MetadataPair
+	timestamp := time.Now()
+	version := resource.Version{
+		Timestamp: timestamp,
+	}
+	//output to stdout...
+	response := out.Response{
+		Version:  version,
+		Metadata: metadata,
+	}
+
+	outputResponse(response)
+
 }
 
 //process path from env variables
@@ -105,7 +126,7 @@ func prepareHTTPPut(src resource.Source) func(path string, to string) error {
 		resp, err := client.Do(req)
 
 		if err != nil {
-			fmt.Println(resp)
+			fatal(fmt.Sprintf("Error response from http. %v", resp), err)
 		}
 
 		return err
@@ -114,20 +135,9 @@ func prepareHTTPPut(src resource.Source) func(path string, to string) error {
 	return f
 }
 
-func readDirRecursively(path string) {
-
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, f := range files {
-		if f.IsDir() {
-			readDirRecursively(path + "/" + f.Name())
-		}
-		fmt.Println(f.Name())
-	}
-
+func fatal(message string, err error) {
+	fmt.Fprintf(os.Stderr, "error %s: %s\n", message, err)
+	os.Exit(1)
 }
 
 func inputRequest(request *out.Request) {

@@ -1,7 +1,7 @@
 package in
 
 import (
-	"github.com/lorands/http-resource"
+	"github.com/lorands/http-put-resource"
 )
 
 type Request struct {

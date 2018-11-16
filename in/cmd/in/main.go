@@ -6,39 +6,39 @@ import (
 	"os"
 	"time"
 
-	resource "github.com/lorands/http-resource"
-	"github.com/lorands/http-resource/in"
+	resource "github.com/lorands/http-put-resource"
+	"github.com/lorands/http-put-resource/in"
 )
 
 func main() {
 	var request in.Request
 
-	fmt.Println("Request:", request)
+	// fmt.Println("Request:", request)
 
 	if err := json.NewDecoder(os.Stdin).Decode(&request); err != nil {
 		fatal("reading request from stdin", err)
 	}
 
-	fmt.Println("Request:", request)
+	// fmt.Println("Request:", request)
 
 	timestamp := request.Version.Timestamp
 	if timestamp.IsZero() {
 		timestamp = time.Now()
 	}
 
-	fmt.Println("TS:", timestamp)
+	// fmt.Println("TS:", timestamp)
 
 	response := in.Response{
 		Version: resource.Version{
 			Timestamp: timestamp,
 		},
 	}
-	fmt.Println("Response:", response)
+	// fmt.Println("Response:", response)
 
 	if err := json.NewEncoder(os.Stdout).Encode(response); err != nil {
 		fatal("writing response", err)
 	}
-	fmt.Println("Done.")
+	// fmt.Println("Done.")
 }
 
 func fatal(message string, err error) {

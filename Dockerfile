@@ -1,13 +1,13 @@
 FROM golang:alpine as builder
-RUN apk add --no-cache curl jq
+#RUN apk add --no-cache curl jq
 RUN mkdir -p /assets
 WORKDIR /assets
-COPY . /go/src/github.com/lorands/http-resource
+COPY . /go/src/github.com/lorands/http-put-resource
 ENV CGO_ENABLED 0
-RUN go build -o /assets/in github.com/lorands/http-resource/in/cmd/in
-RUN go build -o /assets/out github.com/lorands/http-resource/out/cmd/out
-RUN go build -o /assets/check github.com/lorands/http-resource/check/cmd/check
-WORKDIR /go/src/github.com/lorands/http-resource
+RUN go build -o /assets/in github.com/lorands/http-put-resource/in/cmd/in
+RUN go build -o /assets/out github.com/lorands/http-put-resource/out/cmd/out
+RUN go build -o /assets/check github.com/lorands/http-put-resource/check/cmd/check
+WORKDIR /go/src/github.com/lorands/http-put-resource
 RUN set -e; for pkg in $(go list ./... | grep -v "acceptance"); do \
 		go test -o "/tests/$(basename $pkg).test" -c $pkg; \
 	done
