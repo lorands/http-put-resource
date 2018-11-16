@@ -25,7 +25,7 @@ No effect.
 Puts the provided folder to http. 
 
 * `from`: *Required* The relative path to start watching for files
-* `from-re-filter`: *Optional* Inclusive regesx filter to be used. Each path element is matched aginst it.
+* `from_re_filter`: *Optional* Inclusive regesx filter to be used. Each path element is matched aginst it.
 * `to`: *Required* The subpath on HTTP end. Can contain env variables. Look at the example.
 
 ## Pipeline example
@@ -44,7 +44,6 @@ resources:
       url: https://mynexus.example.com/repository/raw1
       username: myUser
       password: myPass
-      verbose: true
 jobs:
   - name: publish
     plan:
@@ -61,8 +60,8 @@ jobs:
         put: http-resource-nx-raw
         params:
           from: build-result/
-          from-re-filter: [^/]+/reports/.*
-          to: builds/$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME/$BUILD_NAME
+          from_re_filter: .*/reports/.*
+          to: reports/{{.BUILD_PIPELINE_NAME}}/{{.BUILD_JOB_NAME}}/{{.BUILD_NAME}}
 ```
 
 

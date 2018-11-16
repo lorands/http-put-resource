@@ -6,9 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 
 	// "io/ioutil"
-	"log"
+
 	"net/http"
 	"os"
 	"path/filepath"
@@ -29,16 +30,16 @@ func main() {
 
 	sourceDir := os.Args[1]
 
-	// fmt.Println("Input directory set.", sourceDir)
+	say("Input directory set.", sourceDir)
 
 	var request out.Request
 	inputRequest(&request)
 
-	// fmt.Println("Request params set:", request)
+	say("Request params set: %v\n", request)
 
 	toPathPrefix := processTemplatedTo(request.Params.To)
 
-	// fmt.Println("Target output URL: ", request.Source.URL+"/"+toPathPrefix)
+	say("Target output URL: %v\n", request.Source.URL+"/"+toPathPrefix)
 
 	httpPut := prepareHTTPPut(request.Source)
 
@@ -46,11 +47,11 @@ func main() {
 
 	if request.Params.FromRe != "" {
 		re = regexp.MustCompile(request.Params.FromRe)
-		// fmt.Println(re)
 	}
 
 	workFolder := sourceDir + "/" + request.Params.From
-	// readDirRecursively(sourceDir + "/" + request.Params.From)
+
+	say("workfolder is %v\n", workFolder)
 
 	filepath.Walk(workFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -59,10 +60,14 @@ func main() {
 		relPath := path[len(workFolder):]
 		if re != nil {
 			if re.MatchString(relPath) {
-				// fmt.Println(relPath)
+				say("Matched path  %v\n", relPath)
 				if !info.IsDir() {
 					httpPut(path, toPathPrefix+"/"+path[len(workFolder):])
 				}
+			}
+		} else {
+			if !info.IsDir() {
+				httpPut(path, toPathPrefix+"/"+path[len(workFolder):])
 			}
 		}
 		return nil
@@ -110,7 +115,7 @@ func prepareHTTPPut(src resource.Source) func(path string, to string) error {
 	client := &http.Client{}
 
 	f := func(path string, to string) error {
-		fmt.Println("To PUT file: ", path)
+		say("To PUT file: %v\n", path)
 
 		var reader io.Reader
 
@@ -126,7 +131,7 @@ func prepareHTTPPut(src resource.Source) func(path string, to string) error {
 		resp, err := client.Do(req)
 
 		if err != nil {
-			fatal(fmt.Sprintf("Error response from http. %v", resp), err)
+			fatal(fmt.Sprintf("Error response from http. %v\n", resp), err)
 		}
 
 		return err
@@ -150,4 +155,8 @@ func outputResponse(response out.Response) {
 	if err := json.NewEncoder(os.Stdout).Encode(response); err != nil {
 		log.Fatal("writing response to stdout", err)
 	}
+}
+
+func say(message string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, message, args...)
 }
