@@ -1,7 +1,7 @@
 package out
 
 import (
-	"github.com/lorands/http-resource"
+	"github.com/lorands/http-put-resource"
 )
 
 type Request struct {
@@ -11,8 +11,8 @@ type Request struct {
 
 type Params struct {
 	From   string `json:"from"`
-	FromRe string `json:"from-re-filter"`
-	To     string `json:"to"`
+	FromRe string `json:"from_re_filter,omitempty"`
+	To     string `json:"to,omitempty"`
 }
 
 type Response struct {
