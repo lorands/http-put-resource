@@ -22,6 +22,8 @@ import (
 	"github.com/lorands/http-put-resource/out"
 )
 
+var trace bool
+
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatal(fmt.Sprintf("usage: %v <sources directory>", os.Args[0]))
@@ -30,16 +32,18 @@ func main() {
 
 	sourceDir := os.Args[1]
 
-	say("Input directory set.", sourceDir)
-
 	var request out.Request
 	inputRequest(&request)
 
-	say("Request params set: %v\n", request)
+	trace = request.Source.Verbose
+
+	tracelog("Input directory set.", sourceDir)
+	tracelog("Request params set: %v\n", request)
 
 	toPathPrefix := processTemplatedTo(request.Params.To)
 
-	say("Target output URL: %v\n", request.Source.URL+"/"+toPathPrefix)
+	targetURL := request.Source.URL + "/" + toPathPrefix
+	tracelog("Target output URL: %v\n", targetURL)
 
 	httpPut := prepareHTTPPut(request.Source)
 
@@ -51,19 +55,22 @@ func main() {
 
 	workFolder := sourceDir + "/" + request.Params.From
 
-	say("workfolder is %v\n", workFolder)
+	tracelog("workfolder is %v\n", workFolder)
 
 	filepath.Walk(workFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		relPath := path[len(workFolder):]
+		tracelog("relative path: %v\n", relPath)
 		if re != nil {
 			if re.MatchString(relPath) {
-				say("Matched path  %v\n", relPath)
+				tracelog("Matched path  %v\n", relPath)
 				if !info.IsDir() {
 					httpPut(path, toPathPrefix+"/"+path[len(workFolder):])
 				}
+			} else {
+				tracelog("No match for: %v\n", relPath)
 			}
 		} else {
 			if !info.IsDir() {
@@ -73,8 +80,12 @@ func main() {
 		return nil
 	})
 
-	//TODO put url to metadata
-	var metadata []resource.MetadataPair
+	metadata := make([]resource.MetadataPair, 1)
+	metadata[0] = resource.MetadataPair{
+		Name:  "TragetURL",
+		Value: targetURL,
+	}
+
 	timestamp := time.Now()
 	version := resource.Version{
 		Timestamp: timestamp,
@@ -86,7 +97,6 @@ func main() {
 	}
 
 	outputResponse(response)
-
 }
 
 //process path from env variables
@@ -115,7 +125,7 @@ func prepareHTTPPut(src resource.Source) func(path string, to string) error {
 	client := &http.Client{}
 
 	f := func(path string, to string) error {
-		say("To PUT file: %v\n", path)
+		tracelog("To PUT file: %v\n", path)
 
 		var reader io.Reader
 
@@ -126,8 +136,10 @@ func prepareHTTPPut(src resource.Source) func(path string, to string) error {
 		if err != nil {
 			return err
 		}
-		req.SetBasicAuth(src.Username, src.Password)
-
+		if src.Username != "" {
+			tracelog("Setting basic authorization as requested for user: %v\n", src.Username)
+			req.SetBasicAuth(src.Username, src.Password)
+		}
 		resp, err := client.Do(req)
 
 		if err != nil {
@@ -157,6 +169,8 @@ func outputResponse(response out.Response) {
 	}
 }
 
-func say(message string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, message, args...)
+func tracelog(message string, args ...interface{}) {
+	if trace {
+		fmt.Fprintf(os.Stderr, message, args...)
+	}
 }

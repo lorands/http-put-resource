@@ -6,6 +6,7 @@ type Source struct {
 	URL      string `json:"url"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Verbose  bool   `json:"verbose,omitempty"`
 }
 
 type Version struct {
